@@ -19,7 +19,18 @@ list(
   tar_target(record_df, parse_record_lines(data_lines)),
   tar_target(record_clean, clean_record(record_df)),
 
+  # Manual corrections
+  tarchetypes::tar_file_read(
+    manual_corrections,
+    "manual_corrections.csv",
+    read_manual_corrections(!!.x)
+  ),
+  tar_target(
+    record_corrected,
+    apply_manual_corrections(record_clean, manual_corrections)
+  ),
+
   # Draft summaries
-  tar_target(wins_losses, summarize_wins_losses(record_clean)),
-  tar_target(deck_color_counts, count_deck_colors(record_clean))
+  tar_target(wins_losses, summarize_wins_losses(record_corrected)),
+  tar_target(deck_color_counts, count_deck_colors(record_corrected))
 )

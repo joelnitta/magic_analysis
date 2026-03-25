@@ -81,6 +81,114 @@ clean_record <- function(record_df) {
     )
 }
 
+# Manual corrections
+
+#' Validate manual corrections data
+#'
+#' @param manual_corrections Tibble of manual corrections.
+#'
+#' @return The input tibble, invisibly, if validation succeeds.
+validate_manual_corrections <- function(manual_corrections) {
+  required_cols <- c(
+    "datetime",
+    "set_code",
+    "deck_color",
+    "format",
+    "wins",
+    "losses"
+  )
+  missing_cols <- setdiff(required_cols, names(manual_corrections))
+
+  if (length(missing_cols) > 0) {
+    stop(
+      paste0(
+        "manual_corrections.csv is missing required columns: ",
+        paste(missing_cols, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  duplicate_keys <- manual_corrections |>
+    dplyr::count(datetime, set_code, deck_color, format, name = "n") |>
+    dplyr::filter(n > 1)
+
+  if (nrow(duplicate_keys) > 0) {
+    duplicate_preview <- paste(
+      capture.output(print(duplicate_keys, n = min(10, nrow(duplicate_keys)))),
+      collapse = "\n"
+    )
+    stop(
+      paste0(
+        "manual_corrections.csv has duplicate correction keys. ",
+        "Each datetime/set_code/deck_color/format combination must be unique.\n",
+        "Duplicate rows preview:\n",
+        duplicate_preview
+      ),
+      call. = FALSE
+    )
+  }
+
+  invalid_rows <- manual_corrections |>
+    dplyr::filter(is.na(datetime) | is.na(wins) | is.na(losses))
+
+  if (nrow(invalid_rows) > 0) {
+    invalid_preview <- paste(
+      capture.output(print(invalid_rows, n = min(10, nrow(invalid_rows)))),
+      collapse = "\n"
+    )
+    stop(
+      paste0(
+        "manual_corrections.csv contains invalid values. ",
+        "Check datetime, wins, and losses for parse failures.\n",
+        "Invalid rows preview:\n",
+        invalid_preview
+      ),
+      call. = FALSE
+    )
+  }
+
+  invisible(manual_corrections)
+}
+
+#' Read manual corrections from a CSV file
+#'
+#' @param path Path to a CSV of manual corrections.
+#'
+#' @return A tibble of corrected values keyed by identifying fields.
+read_manual_corrections <- function(path) {
+  manual_corrections <- readr::read_csv(path, show_col_types = FALSE) |>
+    dplyr::mutate(
+      datetime = as.POSIXct(datetime, tz = "UTC"),
+      wins = as.integer(wins),
+      losses = as.integer(losses)
+    )
+
+  validate_manual_corrections(manual_corrections)
+
+  manual_corrections
+}
+
+#' Apply manual corrections to known bad record rows
+#'
+#' @param record_clean Cleaned record tibble.
+#' @param manual_corrections Tibble returned by `read_manual_corrections()`.
+#'
+#' @return A cleaned tibble with manual corrections applied.
+apply_manual_corrections <- function(record_clean, manual_corrections) {
+  record_clean |>
+    dplyr::left_join(
+      manual_corrections |>
+        dplyr::rename(corrected_wins = wins, corrected_losses = losses),
+      by = c("datetime", "set_code", "deck_color", "format")
+    ) |>
+    dplyr::mutate(
+      wins = dplyr::coalesce(corrected_wins, wins),
+      losses = dplyr::coalesce(corrected_losses, losses)
+    ) |>
+    dplyr::select(-corrected_wins, -corrected_losses)
+}
+
 # Draft summaries
 
 #' Summarize wins and losses for draft events by set
