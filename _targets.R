@@ -1,13 +1,11 @@
-library(targets)
-
+source("R/packages.R")
 source("R/functions.R")
-
-tar_option_set(
-  packages = c("dplyr", "readr", "rlang", "stringr", "tibble", "tidyr")
-)
 
 list(
   # File input
+  # - Click on "Copyable" in the 17lands "Event History" page, then select ALL
+  #   of the text on webpage with ctrl (or command) + a, and copy it to
+  #   data/record.txt
   tarchetypes::tar_file_read(
     record_raw,
     "data/record.txt",
@@ -20,6 +18,9 @@ list(
   tar_target(record_clean, clean_record(record_df)),
 
   # Manual corrections
+  # - Make any manual fixes to your record in this CSV file. If the time, set
+  #   code etc. don't match the data from 17lands, the correction will be
+  #   ignored.
   tarchetypes::tar_file_read(
     manual_corrections,
     "manual_corrections.csv",
