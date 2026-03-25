@@ -9,6 +9,8 @@ This repo is for people who:
 - use 17Lands,
 - and are comfortable working in R.
 
+For now, it is mostly for analyzing win/loss records.
+
 ## What this project does
 
 The pipeline reads your 17Lands event history, cleans it, applies optional
