@@ -25,6 +25,5 @@ list(
 
   # Draft summaries
   tar_target(wins_losses, summarize_wins_losses(record_clean, target_set)),
-  tar_target(deck_color_counts, count_deck_colors(record_clean, target_set)),
-  tar_target(black_usage, summarize_black_usage(record_clean, target_set))
+  tar_target(deck_color_counts, count_deck_colors(record_clean, target_set))
 )
