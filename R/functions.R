@@ -1,4 +1,4 @@
-# File input
+# File input ----
 
 #' Read raw 17Lands event history text
 #'
@@ -9,7 +9,7 @@ read_record_raw <- function(path) {
   readr::read_lines(path)
 }
 
-# Record parsing
+# Record parsing ----
 
 #' Keep lines that contain tab-separated event rows
 #'
@@ -81,7 +81,7 @@ clean_record <- function(record_df) {
     )
 }
 
-# Manual corrections
+# Manual corrections ----
 
 #' Validate manual corrections data
 #'
@@ -255,7 +255,7 @@ apply_manual_corrections <- function(record_clean, manual_corrections) {
     dplyr::select(-corrected_wins, -corrected_losses)
 }
 
-# Draft summaries
+# Draft summaries ----
 
 #' Summarize wins and losses for draft events by set
 #'

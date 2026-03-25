@@ -2,7 +2,7 @@ source("R/packages.R")
 source("R/functions.R")
 
 list(
-  # File input
+  # File input ----
   # - Click on "Copyable" in the 17lands "Event History" page, then select ALL
   #   of the text on webpage with ctrl (or command) + a, and copy it to
   #   data/record.txt
@@ -12,12 +12,12 @@ list(
     read_record_raw(!!.x)
   ),
 
-  # Record parsing
+  # Record parsing ----
   tar_target(data_lines, extract_data_lines(record_raw)),
   tar_target(record_df, parse_record_lines(data_lines)),
   tar_target(record_clean, clean_record(record_df)),
 
-  # Manual corrections
+  # Manual corrections ----
   # - Make any manual fixes to your record in this CSV file. If the time, set
   #   code etc. don't match the data from 17lands, the correction will be
   #   ignored.
@@ -31,7 +31,7 @@ list(
     apply_manual_corrections(record_clean, manual_corrections)
   ),
 
-  # Draft summaries
+  # Draft summaries ----
   tar_target(wins_losses, summarize_wins_losses(record_corrected)),
   tar_target(deck_color_counts, count_deck_colors(record_corrected))
 )
