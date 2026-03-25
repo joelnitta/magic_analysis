@@ -201,6 +201,7 @@ summarize_wins_losses <- function(record_clean) {
     dplyr::filter(stringr::str_detect(format, "Draft")) |>
     dplyr::group_by(set_code) |>
     dplyr::summarize(
+      last_played = max(datetime, na.rm = TRUE),
       wins = sum(wins, na.rm = TRUE),
       losses = sum(losses, na.rm = TRUE),
       .groups = "drop"
@@ -212,7 +213,8 @@ summarize_wins_losses <- function(record_clean) {
         NA_real_
       )
     ) |>
-    dplyr::arrange(set_code)
+    dplyr::arrange(dplyr::desc(last_played)) |>
+    dplyr::select(-last_played)
 }
 
 #' Count deck color combinations for draft events by set
