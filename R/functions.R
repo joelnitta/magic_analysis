@@ -87,7 +87,7 @@ clean_record <- function(record_df) {
 #'
 #' @param manual_corrections Tibble of manual corrections.
 #'
-#' @return The input tibble, invisibly, if validation succeeds.
+#' @return A cleaned corrections tibble.
 validate_manual_corrections <- function(manual_corrections) {
   required_cols <- c(
     "datetime",
@@ -109,26 +109,6 @@ validate_manual_corrections <- function(manual_corrections) {
     )
   }
 
-  duplicate_keys <- manual_corrections |>
-    dplyr::count(datetime, set_code, deck_color, format, name = "n") |>
-    dplyr::filter(n > 1)
-
-  if (nrow(duplicate_keys) > 0) {
-    duplicate_preview <- paste(
-      capture.output(print(duplicate_keys, n = min(10, nrow(duplicate_keys)))),
-      collapse = "\n"
-    )
-    stop(
-      paste0(
-        "manual_corrections.csv has duplicate correction keys. ",
-        "Each datetime/set_code/deck_color/format combination must be unique.\n",
-        "Duplicate rows preview:\n",
-        duplicate_preview
-      ),
-      call. = FALSE
-    )
-  }
-
   invalid_rows <- manual_corrections |>
     dplyr::filter(is.na(datetime) | is.na(wins) | is.na(losses))
 
@@ -137,10 +117,10 @@ validate_manual_corrections <- function(manual_corrections) {
       capture.output(print(invalid_rows, n = min(10, nrow(invalid_rows)))),
       collapse = "\n"
     )
-    stop(
+    warning(
       paste0(
         "manual_corrections.csv contains invalid values. ",
-        "Check datetime, wins, and losses for parse failures.\n",
+        "Rows with parse failures will be ignored.\n",
         "Invalid rows preview:\n",
         invalid_preview
       ),
@@ -148,7 +128,31 @@ validate_manual_corrections <- function(manual_corrections) {
     )
   }
 
-  invisible(manual_corrections)
+  valid_corrections <- manual_corrections |>
+    dplyr::filter(!is.na(datetime), !is.na(wins), !is.na(losses))
+
+  duplicate_keys <- valid_corrections |>
+    dplyr::count(datetime, set_code, deck_color, format, name = "n") |>
+    dplyr::filter(n > 1)
+
+  if (nrow(duplicate_keys) > 0) {
+    duplicate_preview <- paste(
+      capture.output(print(duplicate_keys, n = min(10, nrow(duplicate_keys)))),
+      collapse = "\n"
+    )
+    warning(
+      paste0(
+        "manual_corrections.csv has duplicate correction keys. ",
+        "Keeping the first row per key and ignoring the rest.\n",
+        "Duplicate key preview:\n",
+        duplicate_preview
+      ),
+      call. = FALSE
+    )
+  }
+
+  valid_corrections |>
+    dplyr::distinct(datetime, set_code, deck_color, format, .keep_all = TRUE)
 }
 
 #' Read manual corrections from a CSV file
@@ -176,9 +180,71 @@ read_manual_corrections <- function(path) {
 #'
 #' @return A cleaned tibble with manual corrections applied.
 apply_manual_corrections <- function(record_clean, manual_corrections) {
+  correction_match_counts <- manual_corrections |>
+    dplyr::left_join(
+      record_clean |>
+        dplyr::select(datetime, set_code, deck_color, format),
+      by = c("datetime", "set_code", "deck_color", "format")
+    ) |>
+    dplyr::count(
+      datetime,
+      set_code,
+      deck_color,
+      format,
+      wins,
+      losses,
+      name = "n_matches"
+    )
+
+  unmatched_corrections <- correction_match_counts |>
+    dplyr::filter(n_matches == 0)
+
+  if (nrow(unmatched_corrections) > 0) {
+    unmatched_preview <- paste(
+      capture.output(
+        print(unmatched_corrections, n = min(10, nrow(unmatched_corrections)))
+      ),
+      collapse = "\n"
+    )
+    warning(
+      paste0(
+        "Some manual corrections matched no rows in record data and were ",
+        "ignored.\n",
+        "Unmatched corrections preview:\n",
+        unmatched_preview
+      ),
+      call. = FALSE
+    )
+  }
+
+  ambiguous_corrections <- correction_match_counts |>
+    dplyr::filter(n_matches > 1)
+
+  if (nrow(ambiguous_corrections) > 0) {
+    ambiguous_preview <- paste(
+      capture.output(
+        print(ambiguous_corrections, n = min(10, nrow(ambiguous_corrections)))
+      ),
+      collapse = "\n"
+    )
+    warning(
+      paste0(
+        "Some manual corrections matched multiple rows in record data and ",
+        "were ignored.\n",
+        "Ambiguous corrections preview:\n",
+        ambiguous_preview
+      ),
+      call. = FALSE
+    )
+  }
+
+  applicable_corrections <- correction_match_counts |>
+    dplyr::filter(n_matches == 1) |>
+    dplyr::select(-n_matches)
+
   record_clean |>
     dplyr::left_join(
-      manual_corrections |>
+      applicable_corrections |>
         dplyr::rename(corrected_wins = wins, corrected_losses = losses),
       by = c("datetime", "set_code", "deck_color", "format")
     ) |>
