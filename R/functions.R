@@ -81,56 +81,52 @@ clean_record <- function(record_df) {
     )
 }
 
-#' Choose set code for filtering
-#'
-#' @param record_clean Cleaned record tibble.
-#' @param target_set Optional set code to use. If `NULL`, use most recent set.
-#'
-#' @return A single set code string.
-resolve_target_set <- function(record_clean, target_set = NULL) {
-  if (!is.null(target_set)) {
-    return(target_set)
-  }
-
-  record_clean |>
-    dplyr::arrange(dplyr::desc(datetime)) |>
-    dplyr::slice_head(n = 1) |>
-    dplyr::pull(set_code)
-}
-
 # Draft summaries
 
-#' Summarize wins and losses for draft events in a set
+#' Summarize wins and losses for draft events by set
 #'
 #' @param record_clean Cleaned record tibble.
-#' @param target_set Set code to include.
 #'
-#' @return A one-row tibble with total wins and losses.
-summarize_wins_losses <- function(record_clean, target_set) {
+#' @return A tibble with one row per set.
+summarize_wins_losses <- function(record_clean) {
   record_clean |>
-    dplyr::filter(
-      stringr::str_detect(format, "Draft"),
-      set_code == target_set
-    ) |>
+    dplyr::filter(stringr::str_detect(format, "Draft")) |>
+    dplyr::group_by(set_code) |>
     dplyr::summarize(
       wins = sum(wins, na.rm = TRUE),
-      losses = sum(losses, na.rm = TRUE)
-    )
+      losses = sum(losses, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    dplyr::mutate(
+      win_rate = dplyr::if_else(
+        wins + losses > 0,
+        100 * wins / (wins + losses),
+        NA_real_
+      )
+    ) |>
+    dplyr::arrange(set_code)
 }
 
-#' Count deck color combinations for draft events in a set
+#' Count deck color combinations for draft events by set
 #'
 #' @param record_clean Cleaned record tibble.
-#' @param target_set Set code to include.
 #'
-#' @return A tibble of deck color counts.
-count_deck_colors <- function(record_clean, target_set) {
+#' @return A tibble with one row per set and one column per deck color.
+count_deck_colors <- function(record_clean) {
   record_clean |>
-    dplyr::filter(
-      stringr::str_detect(format, "Draft"),
-      set_code == target_set
+    dplyr::filter(stringr::str_detect(format, "Draft")) |>
+    dplyr::mutate(
+      deck_color = dplyr::if_else(deck_color == "", "unknown", deck_color)
     ) |>
-    dplyr::count(deck_color)
+    dplyr::count(set_code, deck_color) |>
+    tidyr::pivot_wider(
+      names_from = deck_color,
+      values_from = n,
+      values_fill = 0,
+      names_prefix = "deck_color_",
+      names_sort = TRUE
+    ) |>
+    dplyr::arrange(set_code)
 }
 
 #' Summarize black main-color and splash-color usage
