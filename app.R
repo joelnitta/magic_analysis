@@ -10,6 +10,17 @@ wins_file <- "working/wins_losses.csv"
 decks_file <- "working/deck_color_counts.csv"
 lands_file <- "working/lands_set_averages.csv"
 
+dashboard_inputs <- c(wins_file, decks_file, lands_file)
+
+last_updated <- if (all(file.exists(dashboard_inputs))) {
+  format(
+    max(file.info(dashboard_inputs)$mtime, na.rm = TRUE),
+    "%Y-%m-%d %H:%M %Z"
+  )
+} else {
+  "unavailable"
+}
+
 read_dashboard_data <- function() {
   if (
     !file.exists(wins_file) ||
@@ -122,7 +133,20 @@ ui <- fluidPage(
       h3("Win Rate by Set"),
       plotOutput("win_rate_plot", height = "420px"),
       h3("Deck Color Composition by Set"),
-      plotOutput("deck_plot", height = "420px")
+      plotOutput("deck_plot", height = "420px"),
+      tags$hr(),
+      tags$p(
+        style = "font-size: 0.9em; color: #666;",
+        paste("Last updated:", last_updated),
+        tags$span(" | "),
+        tags$a(
+          href = "https://github.com/joelnitta/magic_analysis",
+          target = "_blank",
+          rel = "noopener noreferrer",
+          icon("github"),
+          " Source code"
+        )
+      )
     )
   )
 )
