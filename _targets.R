@@ -3,14 +3,9 @@ source("R/functions.R")
 
 list(
   # File input ----
-  # - Click on "Copyable" in the 17lands "Event History" page, then select ALL
-  #   of the text on webpage with ctrl (or command) + a, and copy it to
-  #   data/record.txt
-  tarchetypes::tar_file_read(
-    record_raw,
-    "data/record.txt",
-    read_record_raw(!!.x)
-  ),
+  # - Set 17LANDS_USERNAME (or 17LANDS_EMAIL) and 17LANDS_PASSWORD in
+  #   your environment before running tar_make().
+  tar_target(record_raw, fetch_17lands_record_raw()),
 
   # Record parsing ----
   tar_target(data_lines, extract_data_lines(record_raw)),

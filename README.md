@@ -27,6 +27,8 @@ manual corrections, and produces summary tables such as:
   - `tarchetypes`
   - `dplyr`
   - `readr`
+  - `httr2`
+  - `jsonlite`
   - `rlang`
   - `stringr`
   - `tibble`
@@ -36,20 +38,26 @@ Install packages if needed:
 
 ```r
 install.packages(c(
-  "targets", "tarchetypes", "dplyr", "readr", "rlang",
+  "targets", "tarchetypes", "dplyr", "readr", "httr2", "jsonlite", "rlang",
   "stringr", "tibble", "tidyr"
 ))
 ```
 
 ## Data input
 
-### 1) Export event history from 17Lands
+### 1) Configure 17Lands credentials
 
-From the 17Lands **Event History** page:
+Set credentials in your `.Renviron` file:
 
-1. Click **Copyable**.
-2. Select all text (`Cmd+A` on macOS).
-3. Copy and paste into `data/record.txt`.
+```r
+17LANDS_USERNAME="your-email@example.com"
+17LANDS_PASSWORD="your-password"
+```
+
+You can use `17LANDS_EMAIL` instead of `17LANDS_USERNAME`.
+
+The pipeline logs in to 17Lands and downloads event history directly from
+the website.
 
 ### 2) Optional manual corrections
 

@@ -9,6 +9,260 @@ read_record_raw <- function(path) {
   readr::read_lines(path)
 }
 
+#' Read 17Lands login credentials from environment variables
+#'
+#' Required variables are `17LANDS_USERNAME` and `17LANDS_PASSWORD`.
+#' `17LANDS_EMAIL` is also accepted as an alias for the username.
+#'
+#' @return A named list with `email` and `password`.
+read_17lands_credentials <- function() {
+  username <- Sys.getenv("17LANDS_USERNAME", unset = "")
+  password <- Sys.getenv("17LANDS_PASSWORD", unset = "")
+  email_alias <- Sys.getenv("17LANDS_EMAIL", unset = "")
+
+  email <- if (username != "") username else email_alias
+
+  if (email == "" || password == "") {
+    stop(
+      paste0(
+        "Missing 17Lands credentials. Set 17LANDS_USERNAME (or ",
+        "17LANDS_EMAIL) and 17LANDS_PASSWORD in your environment."
+      ),
+      call. = FALSE
+    )
+  }
+
+  list(email = email, password = password)
+}
+
+#' Create an authenticated 17Lands request object
+#'
+#' This performs login and returns a request object with persisted cookies.
+#'
+#' @param credentials A named list from `read_17lands_credentials()`.
+#'
+#' @return An httr2 request object with an authenticated cookie jar.
+login_17lands <- function(credentials) {
+  cookie_path <- tempfile("17lands-cookies-")
+
+  login_req <- httr2::request("https://www.17lands.com/login") |>
+    httr2::req_cookie_preserve(path = cookie_path) |>
+    httr2::req_method("POST") |>
+    httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_headers(
+      `content-type` = "application/json",
+      accept = "application/json, text/plain, */*"
+    ) |>
+    httr2::req_body_json(
+      list(
+        email = credentials$email,
+        password = credentials$password,
+        remember_me = FALSE
+      ),
+      auto_unbox = TRUE
+    )
+
+  login_resp <- httr2::req_perform(login_req)
+  login_text <- httr2::resp_body_string(login_resp)
+  login_status <- httr2::resp_status(login_resp)
+
+  if (login_status >= 400 || grepl("Invalid login", login_text, fixed = TRUE)) {
+    stop(
+      "17Lands login failed. Check 17LANDS_USERNAME and 17LANDS_PASSWORD.",
+      call. = FALSE
+    )
+  }
+
+  httr2::request("https://www.17lands.com") |>
+    httr2::req_cookie_preserve(path = cookie_path) |>
+    httr2::req_headers(accept = "application/json, text/plain, */*")
+}
+
+#' Return a scalar character value from a list-like draft record
+#'
+#' @param x A value from a parsed JSON object.
+#' @param default Default value when `x` is empty or missing.
+#'
+#' @return A scalar character value.
+scalar_value <- function(x, default = "") {
+  if (is.null(x) || length(x) == 0) {
+    return(default)
+  }
+
+  value <- x[[1]]
+  if (is.na(value)) {
+    return(default)
+  }
+
+  as.character(value)
+}
+
+#' Convert one draft record from API JSON into a copyable history line
+#'
+#' @param draft One draft entry from the 17Lands events payload.
+#'
+#' @return One tab-delimited line matching the copyable event-history format.
+draft_to_record_line <- function(draft) {
+  datetime <- scalar_value(draft$datetime)
+  if (datetime == "") {
+    datetime <- scalar_value(draft$last_event_server_time)
+  }
+  if (datetime == "") {
+    datetime <- scalar_value(draft$first_event_server_time)
+  }
+  if (datetime == "") {
+    datetime <- scalar_value(draft$first_pick_time)
+  }
+
+  set_code <- scalar_value(draft$set)
+  if (set_code == "") {
+    set_code <- scalar_value(draft$expansion)
+  }
+
+  colors <- scalar_value(draft$colors)
+  if (colors == "") {
+    colors <- scalar_value(draft$deck_color)
+  }
+
+  wins <- suppressWarnings(as.integer(scalar_value(draft$wins, default = "0")))
+  losses <- suppressWarnings(
+    as.integer(scalar_value(draft$losses, default = "0"))
+  )
+  if (is.na(wins)) {
+    wins <- 0L
+  }
+  if (is.na(losses)) {
+    losses <- 0L
+  }
+
+  event_wins <- suppressWarnings(
+    as.integer(scalar_value(draft$event_wins, default = "0"))
+  )
+  if (is.na(event_wins)) {
+    event_wins <- 0L
+  }
+
+  trophy_flag <- scalar_value(draft$trophy)
+  trophy <- if (trophy_flag == "TRUE" || event_wins >= 1L) "x" else ""
+
+  event_type <- scalar_value(draft$format)
+  if (event_type == "") {
+    event_type <- scalar_value(draft$event_type)
+  }
+
+  start_rank <- scalar_value(draft$start_rank)
+  end_rank <- scalar_value(draft$end_rank)
+  shareable_links <- scalar_value(draft$shareable_links)
+
+  stringr::str_c(
+    c(
+      datetime,
+      set_code,
+      trophy,
+      colors,
+      stringr::str_c(wins, " - ", losses),
+      event_type,
+      start_rank,
+      end_rank,
+      shareable_links
+    ),
+    collapse = "\t"
+  )
+}
+
+#' Extract event-history lines from a parsed 17Lands payload
+#'
+#' @param payload Parsed JSON payload from a 17Lands endpoint.
+#'
+#' @return Character vector of copyable history lines.
+extract_record_lines_from_payload <- function(payload) {
+  copyable_text <- scalar_value(payload$copyable)
+  if (copyable_text == "") {
+    copyable_text <- scalar_value(payload$copyable_text)
+  }
+  if (copyable_text != "") {
+    return(stringr::str_split(copyable_text, "\n", simplify = FALSE)[[1]])
+  }
+
+  drafts <- payload$drafts
+  if (is.null(drafts) && !is.null(payload$data)) {
+    drafts <- payload$data$drafts
+  }
+
+  if (is.null(drafts) || length(drafts) == 0) {
+    return(character())
+  }
+
+  vapply(drafts, draft_to_record_line, character(1))
+}
+
+#' Fetch raw 17Lands event-history rows directly from the website
+#'
+#' The function authenticates with username/password from environment variables,
+#' then requests the events payload and returns lines compatible with
+#' `extract_data_lines()`.
+#'
+#' @return A character vector of tab-delimited record lines.
+fetch_17lands_record_raw <- function() {
+  credentials <- read_17lands_credentials()
+  auth_req <- login_17lands(credentials)
+
+  candidate_urls <- c(
+    "https://www.17lands.com/user/data/events",
+    "https://www.17lands.com/user/data/history/events",
+    "https://www.17lands.com/user/data"
+  )
+
+  statuses <- character()
+
+  for (url in candidate_urls) {
+    events_req <- auth_req |>
+      httr2::req_url(url) |>
+      httr2::req_error(is_error = function(resp) FALSE) |>
+      httr2::req_headers(`x-cancel-previous` = "true")
+
+    events_resp <- httr2::req_perform(events_req)
+    events_status <- httr2::resp_status(events_resp)
+    events_text <- httr2::resp_body_string(events_resp)
+
+    statuses <- c(statuses, paste0(url, " -> ", events_status))
+
+    if (events_status %in% c(401L, 403L)) {
+      stop(
+        "17Lands authentication was rejected while fetching event data.",
+        call. = FALSE
+      )
+    }
+
+    if (events_status >= 400) {
+      next
+    }
+
+    payload <- tryCatch(
+      jsonlite::fromJSON(events_text, simplifyVector = FALSE),
+      error = function(e) NULL
+    )
+
+    if (is.null(payload)) {
+      next
+    }
+
+    record_lines <- extract_record_lines_from_payload(payload)
+    if (length(record_lines) > 0) {
+      return(record_lines)
+    }
+  }
+
+  stop(
+    paste0(
+      "Could not find 17Lands event rows from known endpoints. Tried: ",
+      paste(statuses, collapse = "; "),
+      "."
+    ),
+    call. = FALSE
+  )
+}
+
 # Record parsing ----
 
 #' Keep lines that contain tab-separated event rows
