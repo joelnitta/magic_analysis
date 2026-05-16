@@ -34,15 +34,15 @@ manual corrections, and produces summary tables such as:
   - `stringr`
   - `tibble`
   - `tidyr`
+- `renv`
 
-Install packages if needed:
+This repository now uses `renv` to pin package versions. After cloning, run:
 
 ```r
-install.packages(c(
-  "targets", "tarchetypes", "dplyr", "readr", "httr2", "jsonlite", "shiny", "rlang",
-  "stringr", "tibble", "tidyr"
-))
+renv::restore()
 ```
+
+That will install the exact package versions recorded in `renv.lock`.
 
 ## Data input
 
@@ -82,6 +82,7 @@ will warn and ignore that correction.
 From the project root:
 
 ```r
+renv::restore()
 targets::tar_make()
 ```
 
@@ -107,8 +108,9 @@ Open the generated page at `dashboard.html`.
 You can run an interactive dashboard with a minimum-games filter for the
 set-level win-rate chart.
 
-1. Build data with `targets::tar_make()`.
-2. Launch the app:
+1. Restore packages with `renv::restore()`.
+2. Build data with `targets::tar_make()`.
+3. Launch the app:
 
 ```r
 shiny::runApp("app.R")

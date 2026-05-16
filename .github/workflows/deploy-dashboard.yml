@@ -35,23 +35,10 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Install R dependencies
-        run: |
-          Rscript -e "install.packages(c(
-            'targets',
-            'tarchetypes',
-            'httr2',
-            'jsonlite',
-            'dplyr',
-            'readr',
-            'ggplot2',
-            'scales',
-            'stringr',
-            'tidyr',
-            'tibble',
-            'rlang',
-            'quarto'
-          ), repos = 'https://cloud.r-project.org')"
+      - name: Restore R dependencies from renv
+        uses: r-lib/actions/setup-renv@v2
+        with:
+          cache-version: 1
 
       - name: Build targets pipeline
         run: Rscript -e "targets::tar_make()"
