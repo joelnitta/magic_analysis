@@ -16,10 +16,17 @@ library(ggplot2)
 library(scales)
 library(stringr)
 library(tidyr)
+library(targets)
 
-wins_losses <- readr::read_csv("data/app/wins_losses.csv", show_col_types = FALSE)
+targets::tar_load(c(
+  wins_losses_csv,
+  deck_color_counts_csv
+))
+
+
+wins_losses <- readr::read_csv(wins_losses_csv, show_col_types = FALSE)
 deck_color_counts <- readr::read_csv(
-  "data/app/deck_color_counts.csv",
+  deck_color_counts_csv,
   show_col_types = FALSE
 )
 
