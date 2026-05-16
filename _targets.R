@@ -73,10 +73,6 @@ list(
     dashboard,
     "dashboard.qmd",
     output_file = "dashboard.html",
-    extra_files = c(
-      "working/wins_losses.csv",
-      "working/deck_color_counts.csv",
-      "working/lands_set_averages.csv"
-    )
+    quiet = FALSE
   )
 )
