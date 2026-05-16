@@ -28,5 +28,35 @@ list(
 
   # Draft summaries ----
   tar_target(wins_losses, summarize_wins_losses(record_corrected)),
-  tar_target(deck_color_counts, count_deck_colors(record_corrected))
+  tar_target(deck_color_counts, count_deck_colors(record_corrected)),
+
+  # Dashboard inputs ----
+  tar_target(
+    wins_losses_csv,
+    {
+      readr::write_csv(wins_losses, "working/wins_losses.csv", na = "")
+      "working/wins_losses.csv"
+    },
+    format = "file"
+  ),
+  tar_target(
+    deck_color_counts_csv,
+    {
+      readr::write_csv(
+        deck_color_counts,
+        "working/deck_color_counts.csv",
+        na = ""
+      )
+      "working/deck_color_counts.csv"
+    },
+    format = "file"
+  ),
+
+  # Dashboard ----
+  tarchetypes::tar_quarto(
+    dashboard,
+    "dashboard.qmd",
+    output_file = "dashboard.html",
+    extra_files = c("working/wins_losses.csv", "working/deck_color_counts.csv")
+  )
 )

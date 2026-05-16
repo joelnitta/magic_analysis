@@ -1,0 +1,99 @@
+---
+title: "MTGA Draft Dashboard"
+format:
+  html:
+    toc: false
+    code-fold: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(stringr)
+library(tidyr)
+
+wins_losses <- readr::read_csv("working/wins_losses.csv", show_col_types = FALSE)
+deck_color_counts <- readr::read_csv(
+  "working/deck_color_counts.csv",
+  show_col_types = FALSE
+)
+
+set_order <- wins_losses$set_code
+if (length(set_order) == 0) {
+  set_order <- unique(deck_color_counts$set_code)
+}
+
+wins_plot_data <- wins_losses |>
+  mutate(
+    set_code = factor(set_code, levels = set_order),
+    win_rate = coalesce(win_rate, 0)
+  )
+
+deck_long <- deck_color_counts |>
+  pivot_longer(
+    cols = starts_with("deck_color_"),
+    names_to = "deck_color",
+    values_to = "n"
+  ) |>
+  mutate(
+    deck_color = str_remove(deck_color, "^deck_color_"),
+    set_code = factor(set_code, levels = set_order)
+  )
+
+generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+```
+
+Last updated: `r generated_at`
+
+## Win Rate by Set
+
+```{r}
+if (nrow(wins_plot_data) == 0) {
+  plot.new()
+  text(0.5, 0.5, "No win/loss data available.")
+} else {
+  ggplot(wins_plot_data, aes(x = set_code, y = win_rate, fill = win_rate)) +
+    geom_col(width = 0.7) +
+    geom_text(
+      aes(label = paste0(wins, "-", losses)),
+      vjust = -0.4,
+      size = 3
+    ) +
+    scale_fill_gradient(low = "#c7e9c0", high = "#238b45") +
+    scale_y_continuous(
+      labels = label_percent(scale = 1),
+      limits = c(0, max(wins_plot_data$win_rate, na.rm = TRUE) + 8)
+    ) +
+    labs(
+      x = "Set",
+      y = "Win Rate",
+      fill = "Win Rate",
+      subtitle = "Text labels show wins-losses"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(legend.position = "none")
+}
+```
+
+## Deck Color Composition by Set
+
+```{r}
+if (nrow(deck_long) == 0) {
+  plot.new()
+  text(0.5, 0.5, "No deck color count data available.")
+} else {
+  ggplot(deck_long, aes(x = set_code, y = n, fill = deck_color)) +
+    geom_col(width = 0.7) +
+    labs(
+      x = "Set",
+      y = "Number of Decks",
+      fill = "Deck Color"
+    ) +
+    theme_minimal(base_size = 12)
+}
+```

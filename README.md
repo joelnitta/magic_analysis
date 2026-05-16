@@ -29,6 +29,7 @@ manual corrections, and produces summary tables such as:
   - `readr`
   - `httr2`
   - `jsonlite`
+  - `shiny`
   - `rlang`
   - `stringr`
   - `tibble`
@@ -38,7 +39,7 @@ Install packages if needed:
 
 ```r
 install.packages(c(
-  "targets", "tarchetypes", "dplyr", "readr", "httr2", "jsonlite", "rlang",
+  "targets", "tarchetypes", "dplyr", "readr", "httr2", "jsonlite", "shiny", "rlang",
   "stringr", "tibble", "tidyr"
 ))
 ```
@@ -89,3 +90,28 @@ Read outputs:
 targets::tar_read(wins_losses)
 targets::tar_read(deck_color_counts)
 ```
+
+## Dashboard
+
+Running `targets::tar_make()` now also renders a simple HTML dashboard with
+charts for:
+
+- set-level win rate (`wins_losses`)
+- set-level deck color composition (`deck_color_counts`)
+
+Open the generated page at `dashboard.html`.
+
+## Shiny dashboard
+
+You can run an interactive dashboard with a minimum-games filter for the
+set-level win-rate chart.
+
+1. Build data with `targets::tar_make()`.
+2. Launch the app:
+
+```r
+shiny::runApp("app.R")
+```
+
+The app reads `working/wins_losses.csv` and
+`working/deck_color_counts.csv`, so run `tar_make()` first.
