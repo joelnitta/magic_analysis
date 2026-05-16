@@ -36,7 +36,7 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libuv1-dev
+        run: sudo apt-get update && sudo apt-get install -y libuv1-dev libcurl4-openssl-dev
 
       - name: Restore R dependencies from renv
         uses: r-lib/actions/setup-renv@v2
