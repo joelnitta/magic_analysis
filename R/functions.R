@@ -559,6 +559,136 @@ count_deck_colors <- function(record_clean) {
     dplyr::arrange(set_code)
 }
 
+#' Fetch one set-level 17Lands all-decks average win rate
+#'
+#' @param set_code Set code (for example, "SOS").
+#' @param event_type 17Lands event type (for example, "PremierDraft").
+#' @param fallback_event_types Fallback event types if primary has no games.
+#' @param start_date Start date in YYYY-MM-DD.
+#' @param end_date End date in YYYY-MM-DD.
+#'
+#' @return A tibble with one row and set-level benchmark columns.
+fetch_17lands_set_average <- function(
+  set_code,
+  event_type = "PremierDraft",
+  fallback_event_types = c("QuickDraft", "PickTwoDraft"),
+  start_date = "2000-06-01",
+  end_date = as.character(Sys.Date())
+) {
+  event_types <- unique(c(event_type, fallback_event_types))
+
+  for (event_type_i in event_types) {
+    referer <- paste0(
+      "https://www.17lands.com/deck_color_data?expansion=",
+      utils::URLencode(set_code, reserved = TRUE),
+      "&format=",
+      utils::URLencode(event_type_i, reserved = TRUE),
+      "&start=",
+      utils::URLencode(start_date, reserved = TRUE)
+    )
+
+    req <- httr2::request("https://www.17lands.com/color_ratings/data") |>
+      httr2::req_url_query(
+        expansion = set_code,
+        event_type = event_type_i,
+        start_date = start_date,
+        end_date = end_date,
+        combine_splash = "true"
+      ) |>
+      httr2::req_headers(
+        accept = "application/json, text/plain, */*",
+        `x-requested-with` = "XMLHttpRequest",
+        referer = referer
+      ) |>
+      httr2::req_error(is_error = function(resp) FALSE)
+
+    resp <- httr2::req_perform(req)
+    status <- httr2::resp_status(resp)
+
+    if (status >= 400) {
+      next
+    }
+
+    ratings <- tryCatch(
+      jsonlite::fromJSON(httr2::resp_body_string(resp)),
+      error = function(e) NULL
+    )
+
+    if (is.null(ratings) || !is.data.frame(ratings) || nrow(ratings) == 0) {
+      next
+    }
+
+    all_decks <- ratings |>
+      dplyr::filter(color_name == "All Decks")
+
+    if (nrow(all_decks) == 0) {
+      all_decks <- ratings |>
+        dplyr::filter(!is_summary)
+
+      wins <- sum(all_decks$wins, na.rm = TRUE)
+      games <- sum(all_decks$games, na.rm = TRUE)
+    } else {
+      wins <- all_decks$wins[[1]]
+      games <- all_decks$games[[1]]
+    }
+
+    if (games > 0) {
+      losses <- games - wins
+      win_rate <- 100 * wins / games
+
+      return(
+        tibble::tibble(
+          set_code = set_code,
+          lands_wins = as.numeric(wins),
+          lands_losses = as.numeric(losses),
+          lands_win_rate = as.numeric(win_rate)
+        )
+      )
+    }
+  }
+
+  tibble::tibble(
+    set_code = set_code,
+    lands_wins = 0,
+    lands_losses = 0,
+    lands_win_rate = NA_real_
+  )
+}
+
+#' Fetch set-level 17Lands all-decks averages for many sets
+#'
+#' @param set_codes Character vector of set codes.
+#' @param event_type 17Lands event type (for example, "PremierDraft").
+#' @param fallback_event_types Fallback event types if primary has no games.
+#' @param start_date Start date in YYYY-MM-DD.
+#' @param end_date End date in YYYY-MM-DD.
+#'
+#' @return A tibble with one row per set.
+fetch_17lands_set_averages <- function(
+  set_codes,
+  event_type = "PremierDraft",
+  fallback_event_types = c("QuickDraft", "PickTwoDraft"),
+  start_date = "2000-06-01",
+  end_date = as.character(Sys.Date())
+) {
+  unique_codes <- unique(as.character(set_codes))
+
+  dplyr::bind_rows(
+    lapply(
+      unique_codes,
+      function(code) {
+        fetch_17lands_set_average(
+          set_code = code,
+          event_type = event_type,
+          fallback_event_types = fallback_event_types,
+          start_date = start_date,
+          end_date = end_date
+        )
+      }
+    )
+  )
+}
+
 #' Summarize black main-color and splash-color usage
 #'
 #' @param record_clean Cleaned record tibble.

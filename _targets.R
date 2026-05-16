@@ -29,6 +29,10 @@ list(
   # Draft summaries ----
   tar_target(wins_losses, summarize_wins_losses(record_corrected)),
   tar_target(deck_color_counts, count_deck_colors(record_corrected)),
+  tar_target(
+    lands_set_averages,
+    fetch_17lands_set_averages(wins_losses$set_code)
+  ),
 
   # Dashboard inputs ----
   tar_target(
@@ -51,12 +55,28 @@ list(
     },
     format = "file"
   ),
+  tar_target(
+    lands_set_averages_csv,
+    {
+      readr::write_csv(
+        lands_set_averages,
+        "working/lands_set_averages.csv",
+        na = ""
+      )
+      "working/lands_set_averages.csv"
+    },
+    format = "file"
+  ),
 
   # Dashboard ----
   tarchetypes::tar_quarto(
     dashboard,
     "dashboard.qmd",
     output_file = "dashboard.html",
-    extra_files = c("working/wins_losses.csv", "working/deck_color_counts.csv")
+    extra_files = c(
+      "working/wins_losses.csv",
+      "working/deck_color_counts.csv",
+      "working/lands_set_averages.csv"
+    )
   )
 )
