@@ -11,22 +11,22 @@ read_record_raw <- function(path) {
 
 #' Read 17Lands login credentials from environment variables
 #'
-#' Required variables are `17LANDS_USERNAME` and `17LANDS_PASSWORD`.
-#' `17LANDS_EMAIL` is also accepted as an alias for the username.
+#' Required variables are `SEVENTEENLANDS_USERNAME` and `SEVENTEENLANDS_PASSWORD`.
+#' `SEVENTEENLANDS_EMAIL` is also accepted as an alias for the username.
 #'
 #' @return A named list with `email` and `password`.
 read_17lands_credentials <- function() {
-  username <- Sys.getenv("17LANDS_USERNAME", unset = "")
-  password <- Sys.getenv("17LANDS_PASSWORD", unset = "")
-  email_alias <- Sys.getenv("17LANDS_EMAIL", unset = "")
+  username <- Sys.getenv("SEVENTEENLANDS_USERNAME", unset = "")
+  password <- Sys.getenv("SEVENTEENLANDS_PASSWORD", unset = "")
+  email_alias <- Sys.getenv("SEVENTEENLANDS_EMAIL", unset = "")
 
   email <- if (username != "") username else email_alias
 
   if (email == "" || password == "") {
     stop(
       paste0(
-        "Missing 17Lands credentials. Set 17LANDS_USERNAME (or ",
-        "17LANDS_EMAIL) and 17LANDS_PASSWORD in your environment."
+        "Missing 17Lands credentials. Set SEVENTEENLANDS_USERNAME (or ",
+        "SEVENTEENLANDS_EMAIL) and SEVENTEENLANDS_PASSWORD in your environment."
       ),
       call. = FALSE
     )
@@ -68,7 +68,7 @@ login_17lands <- function(credentials) {
 
   if (login_status >= 400 || grepl("Invalid login", login_text, fixed = TRUE)) {
     stop(
-      "17Lands login failed. Check 17LANDS_USERNAME and 17LANDS_PASSWORD.",
+      "17Lands login failed. Check SEVENTEENLANDS_USERNAME and SEVENTEENLANDS_PASSWORD.",
       call. = FALSE
     )
   }

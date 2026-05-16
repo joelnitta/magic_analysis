@@ -48,14 +48,15 @@ install.packages(c(
 
 ### 1) Configure 17Lands credentials
 
+
 Set credentials in your `.Renviron` file:
 
 ```r
-17LANDS_USERNAME="your-email@example.com"
-17LANDS_PASSWORD="your-password"
+SEVENTEENLANDS_USERNAME="your-email@example.com"
+SEVENTEENLANDS_PASSWORD="your-password"
 ```
 
-You can use `17LANDS_EMAIL` instead of `17LANDS_USERNAME`.
+You can use `SEVENTEENLANDS_EMAIL` instead of `SEVENTEENLANDS_USERNAME`.
 
 The pipeline logs in to 17Lands and downloads event history directly from
 the website.

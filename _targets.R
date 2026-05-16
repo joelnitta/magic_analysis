@@ -3,7 +3,7 @@ source("R/functions.R")
 
 list(
   # File input ----
-  # - Set 17LANDS_USERNAME (or 17LANDS_EMAIL) and 17LANDS_PASSWORD in
+  # - Set SEVENTEENLANDS_USERNAME (or SEVENTEENLANDS_EMAIL) and SEVENTEENLANDS_PASSWORD in
   #   your environment before running tar_make().
   tar_target(record_raw, fetch_17lands_record_raw()),
 
