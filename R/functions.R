@@ -20,13 +20,25 @@ read_17lands_credentials <- function() {
   password <- Sys.getenv("SEVENTEENLANDS_PASSWORD", unset = "")
   email_alias <- Sys.getenv("SEVENTEENLANDS_EMAIL", unset = "")
 
+  # Backward-compatible fallbacks for earlier variable names.
+  if (username == "") {
+    username <- Sys.getenv("17LANDS_USERNAME", unset = "")
+  }
+  if (password == "") {
+    password <- Sys.getenv("17LANDS_PASSWORD", unset = "")
+  }
+  if (email_alias == "") {
+    email_alias <- Sys.getenv("17LANDS_EMAIL", unset = "")
+  }
+
   email <- if (username != "") username else email_alias
 
   if (email == "" || password == "") {
     stop(
       paste0(
         "Missing 17Lands credentials. Set SEVENTEENLANDS_USERNAME (or ",
-        "SEVENTEENLANDS_EMAIL) and SEVENTEENLANDS_PASSWORD in your environment."
+        "SEVENTEENLANDS_EMAIL) and SEVENTEENLANDS_PASSWORD in your ",
+        "environment. Older 17LANDS_* names are also accepted."
       ),
       call. = FALSE
     )
