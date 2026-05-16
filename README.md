@@ -116,5 +116,5 @@ set-level win-rate chart.
 shiny::runApp("app.R")
 ```
 
-The app reads `working/wins_losses.csv` and
-`working/deck_color_counts.csv`, so run `tar_make()` first.
+The app reads `data/app/wins_losses.csv` and
+`data/app/deck_color_counts.csv`, so run `tar_make()` first.

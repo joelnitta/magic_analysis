@@ -6,9 +6,9 @@ library(shiny)
 library(stringr)
 library(tidyr)
 
-wins_file <- "working/wins_losses.csv"
-decks_file <- "working/deck_color_counts.csv"
-lands_file <- "working/lands_set_averages.csv"
+wins_file <- "data/app/wins_losses.csv"
+decks_file <- "data/app/deck_color_counts.csv"
+lands_file <- "data/app/lands_set_averages.csv"
 
 dashboard_inputs <- c(wins_file, decks_file, lands_file)
 
@@ -29,7 +29,7 @@ read_dashboard_data <- function() {
   ) {
     stop(
       paste0(
-        "Missing dashboard input files in working/. Run targets::tar_make() ",
+        "Missing dashboard input files in data/app/. Run targets::tar_make() ",
         "first to generate wins_losses, deck_color_counts, and ",
         "lands_set_averages CSV files."
       ),

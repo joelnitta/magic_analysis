@@ -17,9 +17,9 @@ library(scales)
 library(stringr)
 library(tidyr)
 
-wins_losses <- readr::read_csv("working/wins_losses.csv", show_col_types = FALSE)
+wins_losses <- readr::read_csv("data/app/wins_losses.csv", show_col_types = FALSE)
 deck_color_counts <- readr::read_csv(
-  "working/deck_color_counts.csv",
+  "data/app/deck_color_counts.csv",
   show_col_types = FALSE
 )
 

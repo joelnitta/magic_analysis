@@ -53,7 +53,7 @@ jobs:
         run: |
           mkdir -p _site
           cp dashboard.html _site/
-          cp -R working _site/working
+          cp -R data/app _site/data/app
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

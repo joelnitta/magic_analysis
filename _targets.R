@@ -38,8 +38,8 @@ list(
   tar_target(
     wins_losses_csv,
     {
-      readr::write_csv(wins_losses, "working/wins_losses.csv", na = "")
-      "working/wins_losses.csv"
+      readr::write_csv(wins_losses, "data/app/wins_losses.csv", na = "")
+      "data/app/wins_losses.csv"
     },
     format = "file"
   ),
@@ -48,10 +48,10 @@ list(
     {
       readr::write_csv(
         deck_color_counts,
-        "working/deck_color_counts.csv",
+        "data/app/deck_color_counts.csv",
         na = ""
       )
-      "working/deck_color_counts.csv"
+      "data/app/deck_color_counts.csv"
     },
     format = "file"
   ),
@@ -60,10 +60,10 @@ list(
     {
       readr::write_csv(
         lands_set_averages,
-        "working/lands_set_averages.csv",
+        "data/app/lands_set_averages.csv",
         na = ""
       )
-      "working/lands_set_averages.csv"
+      "data/app/lands_set_averages.csv"
     },
     format = "file"
   ),

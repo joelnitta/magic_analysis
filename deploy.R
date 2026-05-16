@@ -22,9 +22,9 @@ library(rsconnect)
 # List of files required for the app to run
 app_files <- c(
   "app.R",
-  "working/wins_losses.csv",
-  "working/deck_color_counts.csv",
-  "working/lands_set_averages.csv"
+  "data/app/wins_losses.csv",
+  "data/app/deck_color_counts.csv",
+  "data/app/lands_set_averages.csv"
 )
 
 # Deploy the app (change appName as desired)
