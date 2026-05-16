@@ -43,6 +43,9 @@ jobs:
         with:
           cache-version: 1
 
+      - name: Install R quarto package
+        run: Rscript -e "install.packages('quarto', repos = 'https://cloud.r-project.org')"
+
       - name: Build targets pipeline
         run: Rscript -e "targets::tar_make()"
 
