@@ -11,7 +11,8 @@ jobs:
     env:
       SEVENTEENLANDS_USERNAME: ${{ secrets.SEVENTEENLANDS_USERNAME }}
       SEVENTEENLANDS_PASSWORD: ${{ secrets.SEVENTEENLANDS_PASSWORD }}
-      SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
+      SHINYAPPS_ACCOUNT: joelnitta
+      SHINYAPPS_SERVER: shinyapps.io
       SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
       SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
     steps:
@@ -40,7 +41,30 @@ jobs:
       - name: Build targets pipeline
         run: Rscript -e "targets::tar_make()"
 
-      - name: Deploy to shinyapps.io
+      - name: Authorize and deploy app
+        env:
+          APPNAME: magic-dashboard
+          ACCOUNT: joelnitta
+          SERVER: shinyapps.io
+        shell: Rscript {0}
         run: |
-          Rscript -e "rsconnect::setAccountInfo(name = Sys.getenv('SHINYAPPS_NAME'), token = Sys.getenv('SHINYAPPS_TOKEN'), secret = Sys.getenv('SHINYAPPS_SECRET'))"
-          Rscript deploy.R
+          app_files <- c(
+            "app.R",
+            "data/app/wins_losses.csv",
+            "data/app/deck_color_counts.csv",
+            "data/app/lands_set_averages.csv"
+          )
+
+          rsconnect::setAccountInfo(
+            Sys.getenv("SHINYAPPS_ACCOUNT"),
+            Sys.getenv("SHINYAPPS_TOKEN"),
+            Sys.getenv("SHINYAPPS_SECRET")
+          )
+
+          rsconnect::deployApp(
+            appDir = ".",
+            appFiles = app_files,
+            appName = Sys.getenv("APPNAME"),
+            account = Sys.getenv("ACCOUNT"),
+            server = Sys.getenv("SERVER")
+          )
