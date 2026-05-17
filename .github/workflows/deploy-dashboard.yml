@@ -52,6 +52,7 @@ jobs:
       - name: Stage Pages artifact
         run: |
           mkdir -p _site
+          mkdir -p _site/data
           cp dashboard.html _site/
           cp -R data/app _site/data/app
 
