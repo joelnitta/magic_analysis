@@ -31,5 +31,7 @@ app_files <- c(
 rsconnect::deployApp(
   appDir = ".",
   appFiles = app_files,
-  appName = "magic-dashboard"
+  appName = "magic-dashboard",
+  account = Sys.getenv("SHINYAPPS_ACCOUNT", unset = "joelnitta"),
+  server = Sys.getenv("SHINYAPPS_SERVER", unset = "shinyapps.io")
 )
